@@ -7,6 +7,27 @@ import aiohttp
 import os
 import json
 
+# Automatically generate clean credentials.json on startup from environment variables
+try:
+    cred_data = {
+        "type": "service_account",
+        "project_id": os.getenv("G_PROJECT_ID"),
+        "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
+        "private_key": os.getenv("G_PRIVATE_KEY").replace("\\n", "\n"),
+        "client_email": os.getenv("G_CLIENT_EMAIL"),
+        "client_id": "114177635698212694354",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot-sheets%40savvy-fountain-450108-t6.iam.gserviceaccount.com",
+        "universe_domain": "googleapis.com"
+    }
+    with open("credentials.json", "w") as f:
+        json.dump(cred_data, f)
+    print("✅ Successfully generated credentials.json locally!")
+except Exception as e:
+    print(f"❌ Failed to generate credentials file: {e}")
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -17,10 +38,7 @@ SCOPE = [
 ]
 
 try:
-    raw_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    creds_dict = json.loads(raw_env.encode().decode('unicode-escape')) if '\\n' in raw_env else json.loads(raw_env)
-    
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
     print("✅ Sheet Automation Bot connected to Google Sheets successfully!")
