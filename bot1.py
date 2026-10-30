@@ -251,8 +251,7 @@ class ClientPaymentModal(discord.ui.Modal, title="Confirm Task Payment"):
                     target_payment_row = idx
                     break
             if target_payment_row:
-                sheet_payment.update_cell(target_payment_row, 15 if "1" in phase else 17, "Yes")
-                sheet_payment.update_cell(target_payment_row, 19, "Yes")
+                sheet_payment.update_cell(target_payment_row, 14 if "1" in phase else 17, "Yes")
 
             embed = discord.Embed(title=f"💳 Payment Verified: {post_no}", description=f"Paid **{phase.title()}** for **{w_name}**.", color=discord.Color.green())
             if (p_chan := bot.get_channel(PRIVATE_PAYMENTS_CHANNEL_ID)):
@@ -282,10 +281,19 @@ class ClientSubmissionModal(discord.ui.Modal, title="Submit New Task & Rates"):
         content_text = self.post_content.value.strip()
         standard_worker_pay = "2" if t_type == "Post" else "1"
 
+        p1_text = self.phase1_info.value.strip()
+        p2_text = self.phase2_info.value.strip() if self.phase2_info.value else ""
+
         task_data = {
-            "post_no": post_no, "t_type": t_type, "content_text": content_text,
-            "standard_worker_pay": standard_worker_pay, "p1_details": "48 hours",
-            "t2_type": "", "p2_details": "", "t1_client_rate": "$6", "t2_client_rate": ""
+            "post_no": post_no,
+            "t_type": t_type,
+            "content_text": content_text,
+            "standard_worker_pay": standard_worker_pay,
+            "p1_details": p1_text,
+            "t2_type": "Post" if p2_text else "",
+            "p2_details": p2_text,
+            "t1_client_rate": p1_text,
+            "t2_client_rate": p2_text
         }
         await interaction.response.send_message(f"📝 Task **{post_no}** created! Attach images?", view=TaskImagePromptView(task_data), ephemeral=True)
 
@@ -322,4 +330,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     keep_alive()
-    bot.run("YOUR_BOT_1_TOKEN")
+    bot.run("MTU2NTQxMTMzMDg0NzAyMzI0NA.G5jhDV.ZVAOI4-aBCUzCRi7elkcMR2XSd_wW3xDRJaGU0")

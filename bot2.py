@@ -36,7 +36,7 @@ async def automated_sheet_keeper():
                 t1_link = row[4]
 
                 if t1_link and t1_link.startswith("http") and t1_type != "Invalid":
-                    headers = {'User-Agent': 'Mozilla/5.0'}
+                    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
                     async with aiohttp.ClientSession(headers=headers) as session:
                         try:
                             async with session.get(t1_link, timeout=10) as resp:
@@ -65,4 +65,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     keep_alive()
-    bot.run("YOUR_BOT_2_TOKEN")
+    bot.run("MTU2NTYzNDE1ODYyODQzODA0Ng.GYdXmB.lEQAdpCBMOPOQigGzcFfA6NrsBfxUxtXBU9NR8")
