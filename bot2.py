@@ -17,7 +17,9 @@ SCOPE = [
 ]
 
 try:
-    creds_dict = json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+    raw_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    creds_dict = json.loads(raw_env.encode().decode('unicode-escape')) if '\\n' in raw_env else json.loads(raw_env)
+    
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
