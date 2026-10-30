@@ -7,7 +7,6 @@ import datetime
 import random
 import os
 import json
-import ast
 import base64
 
 intents = discord.Intents.default()
@@ -20,35 +19,22 @@ SCOPE = [
 ]
 
 try:
-    raw_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    
-    # Ultimate foolproof parser with auto-padding fix for Render truncation
-    try:
-        creds_dict = json.loads(raw_env)
-    except Exception:
-        try:
-            creds_dict = ast.literal_eval(raw_env)
-        except Exception:
-            # Fix base64 padding if Render cut off trailing characters
-            padded_env = raw_env + "=" * (-len(raw_env) % 4)
-            creds_dict = json.loads(padded_env)
-
-    # Ensure private key newlines are properly unescaped
-    if "private_key" in creds_dict:
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+    encoded_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    decoded_bytes = base64.b64decode(encoded_env.strip())
+    creds_dict = json.loads(decoded_bytes.decode('utf-8'))
 
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
     sheet_payment = client_gs.open("Payment Tracking").sheet1
-    print("✅ Messenger Bot connected to Google Sheets successfully!")
+    print("✅ Messenger Bot connected to Google Sheets successfully via Base64!")
 except Exception as e:
     print(f"❌ Google Sheets Connection Error: {e}")
 
-WORKER_TASKS_CHANNEL_ID = 1564649806482120805     # #reddit-tasks
-CLIENT_ANSWERS_CHANNEL_ID = 1565406309950685287   # #client-answers
-PRIVATE_PAYMENTS_CHANNEL_ID = 1565708632278958100 # Private Payment Ledger
-CLIENT_USER_ID = 1518961433281433611               # Your Client ID
+WORKER_TASKS_CHANNEL_ID = 1564649806482120805
+CLIENT_ANSWERS_CHANNEL_ID = 1565406309950685287
+PRIVATE_PAYMENTS_CHANNEL_ID = 1565708632278958100
+CLIENT_USER_ID = 1518961433281433611
 
 PENDING_TASKS = {}
 OPEN_QUESTIONS = {}
