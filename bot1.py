@@ -7,6 +7,7 @@ import datetime
 import random
 import os
 import json
+import ast
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -19,9 +20,11 @@ SCOPE = [
 
 try:
     raw_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    # Automatically clean out any hidden control characters or bad whitespace from the environment variable
-    cleaned_env = "".join(ch for ch in raw_env if ord(ch) >= 32 or ch in "\n\r\t")
-    creds_dict = json.loads(cleaned_env)
+    # Foolproof parser: tries json.loads first, falls back to ast.literal_eval to safely handle any escape character glitches
+    try:
+        creds_dict = json.loads(raw_env)
+    except Exception:
+        creds_dict = ast.literal_eval(raw_env)
     
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     client_gs = gspread.authorize(creds)
