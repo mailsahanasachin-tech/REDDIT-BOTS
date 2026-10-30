@@ -8,6 +8,7 @@ import random
 import os
 import json
 import ast
+import base64
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -20,12 +21,22 @@ SCOPE = [
 
 try:
     raw_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    # Foolproof parser: tries json.loads first, falls back to ast.literal_eval to safely handle any escape character glitches
+    
+    # Ultimate foolproof parser with auto-padding fix for Render truncation
     try:
         creds_dict = json.loads(raw_env)
     except Exception:
-        creds_dict = ast.literal_eval(raw_env)
-    
+        try:
+            creds_dict = ast.literal_eval(raw_env)
+        except Exception:
+            # Fix base64 padding if Render cut off trailing characters
+            padded_env = raw_env + "=" * (-len(raw_env) % 4)
+            creds_dict = json.loads(padded_env)
+
+    # Ensure private key newlines are properly unescaped
+    if "private_key" in creds_dict:
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
