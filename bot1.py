@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import random
 import os
+import json
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -17,7 +18,8 @@ SCOPE = [
 ]
 
 try:
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
+    creds_dict = json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON"))
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
     sheet_payment = client_gs.open("Payment Tracking").sheet1
