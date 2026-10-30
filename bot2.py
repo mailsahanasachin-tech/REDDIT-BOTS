@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import aiohttp
+import os
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -65,4 +66,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     keep_alive()
-    bot.run("MTU2NTYzNDE1ODYyODQzODA0Ng.GYdXmB.lEQAdpCBMOPOQigGzcFfA6NrsBfxUxtXBU9NR8")
+    bot.run(os.getenv("DISCORD_TOKEN"))

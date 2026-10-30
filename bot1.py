@@ -5,6 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import random
+import os
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -330,4 +331,4 @@ async def on_ready():
 
 if __name__ == "__main__":
     keep_alive()
-    bot.run("MTU2NTQxMTMzMDg0NzAyMzI0NA.G5jhDV.ZVAOI4-aBCUzCRi7elkcMR2XSd_wW3xDRJaGU0")
+    bot.run(os.getenv("DISCORD_TOKEN"))
