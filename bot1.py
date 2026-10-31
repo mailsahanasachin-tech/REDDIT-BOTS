@@ -13,43 +13,19 @@ SCOPES = [
 ]
 
 try:
-    private_key_lines = [
-        "-----BEGIN PRIVATE KEY-----",
-        "MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDY14TKq0CDYf3g",
-        "uE3LEsvuQ+F4MHFgtAyQ6q4pB3iYhF7JCAgCdN1ORlhsxZjmRN3tolo0ZbUggBLt",
-        "P+F5LxKHidCjEz7aTDp+Rg3xzb525iXBYnFDp9fxND5SC+52rjVPhgFYTeyatnDr",
-        "1+gu/esM4TR9E3ZKLEFg8zRxmWBof+c0vcYStLaqS0ReMgroqhBAp6l5n1vgATJV",
-        "VjiqAgbNXXJ7p+7pcs3MNYRccAo0zZLKkuyfGVvCRELn0WZh6hrzvrCdXQGLWe8r",
-        "oi+CyLWNQByuaB5eSKW4t/gusFAfW84Nb96vypilc0HDK7CDeryssWh2tQ9mryVt",
-        "vCy7sM4zAgMBAAECggEAajh8wKjOE+3jJvsxhGpDQoa3AqC8UVIxm6WSRd/2h8PE",
-        "CLcp8UYdCJR2CWZsJVST4C35ARTXesGyQ8zYnvvbmFB+xvuM/PN9bdDUUOBnziek",
-        "VAxsjmdAZVQhuSBGIpXo4Hk03HRjlFANlcIwZyCUTT1ecGyhs+jk5+CLDqDC9LzX",
-        "oCpsgV5VByAjrlNkIxCgGt0fWQ9s9iCSFEfPlorB7XM97GMK8TWXat2BJqgI0MPS",
-        "xPdHBEpzAR4oMxB+AE5DH8UESs1k3Y8uvaFo3EmFbt1bTPDROBQUSHMtT91S3mkx",
-        "xLJHYhjYS+OPtOWAkGao0Jqj362EQrNnEbSdkC8gKBgQD6FEsTIIMVp4a47VQo",
-        "muVIson6VnuuyuHC0lxWrgXnIeJpXuHYdzrOqGI5tvbldbUS3XqsXRg5ZXj4Ckym",
-        "k8l7mVwLMeyxcpEzYUW7vmDLcfli0RNerxnnaadMiQdVO1+IcTRLLl7Bs8yyMlZx",
-        "5bMoLc6El0Epnxv/gEt6SNrGCwKBgQDd+cbXa/gjxKrSSbuUSdjlp2RzFgYKL1mG",
-        "q393vbo6pRqXsLIT6IouiwASFH4eosYxksEqMVGUZaj/MDSguzbpM7OKP78d3RjG",
-        "uX+cTnfjmLVQpYG0wakSpdhCRIJb7UVZoWI4+bC/5YjypEKu1Yqdknqx/+eWf470",
-        "nn0J14Mp5eQKBgQDp7EeZeaUEgXMk0mMRpGprCQ7Fy1XgV8i8CzfyoM/Gt0xpUiah",
-        "7E1m990BraLfWq5pGiFgz6gUMFXqdv/iJYWnhvmxQx7rkYY+8HNhPaCfTVqA059x",
-        "xwrNC2hB0D+6u1IOeA35cUOTn1MPMMTpv3pJUCfIoQ+EFmADLIftt+5kpwKBgQDX",
-        "na/pvQhc1Dz4AixICHZDjf4parjr6U2185p70JCrBk021fQO1km3YMYnGAiFLtgjG",
-        "P3g7bFWRwP87eRr6CfaGZ2iMeMUPRG0xHwEbPoPXW3JLa/Pu6isdL9oqpbYlZKVz",
-        "EM30IU5JTYeUg5k7d33o4ik06fdk9TJVcOHc6GVXcQKBgQDSasz8KvGXExrUH2Wd",
-        "CShf9kzGTcxEl2TfsgEWQt9l3h/+w5a/r53/gqHU9FoO9idoXWM8UsjqmQXv5ypG",
-        "DlRvjcQ/v1/7OpsCNfzePsxt9vAwtMgyqgB8n7u4KRxY6tV4EviBJLBciwYwNX9g",
-        "EC23bUOCEup8jZzRUVME4tn3pA==",
-        "-----END PRIVATE KEY-----"
-    ]
+    # Clean up the private key from Render environment variables safely
+    raw_key = os.getenv("G_PRIVATE_KEY", "")
+    # Remove surrounding quotes if Render added them
+    raw_key = raw_key.strip('"').strip("'")
+    # Replace literal \n text with actual newline characters
+    formatted_key = raw_key.replace("\\n", "\n")
 
     creds_info = {
         "type": "service_account",
-        "project_id": "savvy-fountain-450108-t6",
+        "project_id": os.getenv("G_PROJECT_ID", "savvy-fountain-450108-t6"),
         "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
-        "private_key": "\n".join(private_key_lines),
-        "client_email": "discord-bot-sheets@savvy-fountain-450108-t6.iam.gserviceaccount.com",
+        "private_key": formatted_key,
+        "client_email": os.getenv("G_CLIENT_EMAIL", "discord-bot-sheets@savvy-fountain-450108-t6.iam.gserviceaccount.com"),
         "client_id": "114177635698212694354",
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",
