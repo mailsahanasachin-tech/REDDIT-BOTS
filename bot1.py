@@ -7,6 +7,7 @@ import datetime
 import random
 import os
 import json
+import base64
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -34,23 +35,22 @@ try:
             }
         
         if "private_key" in cred_dict:
-            pk = cred_dict["private_key"]
-            # Convert literal \n text into actual newlines
-            pk = pk.replace("\\n", "\n")
+            pk = cred_dict["private_key"].replace("\\n", "\n")
             
-            # AUTOMATIC PADDING FIX: Ensure base64 blocks within the PEM are correctly padded
-            lines = pk.split("\n")
-            fixed_lines = []
-            for line in lines:
-                if "-----" in line:
-                    fixed_lines.append(line)
-                else:
-                    # Pad line length to be a multiple of 4 with '=' characters if truncated
-                    missing_padding = len(line) % 4
-                    if missing_padding:
-                        line += "=" * (4 - missing_padding)
-                    fixed_lines.append(line)
-            cred_dict["private_key"] = "\n".join(fixed_lines)
+            if "-----BEGIN PRIVATE KEY-----" in pk:
+                lines = [line.strip() for line in pk.split("\n") if line.strip()]
+                b64_content = "".join([l for l in lines if not l.startswith("-----")])
+                
+                # Automatically fix base64 padding length so it never throws length errors
+                b64_content += "=" * (-len(b64_content) % 4)
+                
+                # Rebuild standard clean PEM block with 64-character lines
+                formatted_key = "-----BEGIN PRIVATE KEY-----\n"
+                for i in range(0, len(b64_content), 64):
+                    formatted_key += b64_content[i:i+64] + "\n"
+                formatted_key += "-----END PRIVATE KEY-----\n"
+                
+                cred_dict["private_key"] = formatted_key
 
         with open("credentials.json", "w") as f:
             json.dump(cred_dict, f)
