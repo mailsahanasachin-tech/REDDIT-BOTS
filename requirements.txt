@@ -1,5 +1,5 @@
 discord.py
-gspread
-oauth2client
-aiohttp
 flask
+gspread
+google-auth
+requests
