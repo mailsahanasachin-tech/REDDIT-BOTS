@@ -73,7 +73,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 WORKER_TASKS_CHANNEL_ID = 1564649806482120805     # #reddit-tasks
 CLIENT_ANSWERS_CHANNEL_ID = 1565406309950685287   # #client-answers
 PRIVATE_PAYMENTS_CHANNEL_ID = 1565708632278958100 # Private Payment Ledger
-CLIENT_USER_ID = 1518961433281433611               # Your Client ID
+CLIENT_USER_ID = 1518961433281433611                # Your Client ID
 
 PENDING_TASKS = {}
 OPEN_QUESTIONS = {}
