@@ -17,7 +17,6 @@ try:
     raw_env = os.getenv("G_PRIVATE_KEY")
     if raw_env:
         try:
-            # Parse the JSON object from Render
             cred_dict = json.loads(raw_env)
         except json.JSONDecodeError:
             cred_dict = {
@@ -34,9 +33,24 @@ try:
                 "universe_domain": "googleapis.com"
             }
         
-        # Convert literal \n text into actual newlines to fix base64 padding
         if "private_key" in cred_dict:
-            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+            pk = cred_dict["private_key"]
+            # Convert literal \n text into actual newlines
+            pk = pk.replace("\\n", "\n")
+            
+            # AUTOMATIC PADDING FIX: Ensure base64 blocks within the PEM are correctly padded
+            lines = pk.split("\n")
+            fixed_lines = []
+            for line in lines:
+                if "-----" in line:
+                    fixed_lines.append(line)
+                else:
+                    # Pad line length to be a multiple of 4 with '=' characters if truncated
+                    missing_padding = len(line) % 4
+                    if missing_padding:
+                        line += "=" * (4 - missing_padding)
+                    fixed_lines.append(line)
+            cred_dict["private_key"] = "\n".join(fixed_lines)
 
         with open("credentials.json", "w") as f:
             json.dump(cred_dict, f)
