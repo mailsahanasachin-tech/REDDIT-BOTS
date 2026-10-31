@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import random
 import os
+import json
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -13,11 +14,32 @@ SCOPES = [
 ]
 
 try:
-    # Read directly from your existing Render environment variable name: G_PRIVATE_KEY
-    raw_json_env = os.getenv("G_PRIVATE_KEY")
-    if raw_json_env:
+    raw_env = os.getenv("G_PRIVATE_KEY")
+    if raw_env:
+        try:
+            # Parse the JSON object from Render
+            cred_dict = json.loads(raw_env)
+        except json.JSONDecodeError:
+            cred_dict = {
+                "type": "service_account",
+                "project_id": os.getenv("G_PROJECT_ID", "savvy-fountain-450108-t6"),
+                "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
+                "private_key": raw_env,
+                "client_email": os.getenv("G_CLIENT_EMAIL", "discord-bot-sheets@savvy-fountain-450108-t6.iam.gserviceaccount.com"),
+                "client_id": "114177635698212694354",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot-sheets%40savvy-fountain-450108-t6.iam.gserviceaccount.com",
+                "universe_domain": "googleapis.com"
+            }
+        
+        # Convert literal \n text into actual newlines to fix base64 padding
+        if "private_key" in cred_dict:
+            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+
         with open("credentials.json", "w") as f:
-            f.write(raw_json_env)
+            json.dump(cred_dict, f)
     else:
         print("⚠️ Warning: G_PRIVATE_KEY not found in environment!")
 
