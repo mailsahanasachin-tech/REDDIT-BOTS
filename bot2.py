@@ -1,91 +1,97 @@
-from keep_alive import keep_alive
-import discord
-from discord.ext import commands, tasks
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import aiohttp
 import os
-import json
+import discord
+from discord.ext import tasks, commands
+import gspread
+from google.oauth2.service_account import Credentials
+import traceback
 
-# Automatically generate clean credentials.json on startup from environment variables
-try:
-    cred_data = {
-        "type": "service_account",
-        "project_id": os.getenv("G_PROJECT_ID"),
-        "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
-        "private_key": os.getenv("G_PRIVATE_KEY").replace("\\n", "\n"),
-        "client_email": os.getenv("G_CLIENT_EMAIL"),
-        "client_id": "114177635698212694354",
-        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-        "token_uri": "https://oauth2.googleapis.com/token",
-        "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-        "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot-sheets%40savvy-fountain-450108-t6.iam.gserviceaccount.com",
-        "universe_domain": "googleapis.com"
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
+private_key = os.environ.get("GOOGLE_PRIVATE_KEY", "").replace("\\n", "\n")
+
+creds_info = {
+    "type": "service_account",
+    "project_id": "savvy-fountain-450108-t6",
+    "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
+    "private_key": private_key,
+    "client_email": "discord-bot-sheets@savvy-fountain-450108-t6.iam.gserviceaccount.com",
+    "client_id": "114177635698212694354",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot-sheets%40savvy-fountain-450108-t6.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+}
+
+CLIENT_CONFIG = {
+    "1": {
+        "discord_id": 1559166978734821427,
+        "posting_sheet": "Posting Tasks",
+        "payment_sheet": "Payment Tracking"
     }
-    with open("credentials.json", "w") as f:
-        json.dump(cred_data, f)
-    print("✅ Successfully generated credentials.json locally!")
+}
+
+try:
+    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    client_gs = gspread.authorize(creds)
+    print("✅ Bot 2 connected to Google Sheets!")
 except Exception as e:
-    print(f"❌ Failed to generate credentials file: {e}")
+    traceback.print_exc()
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-SCOPE = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
+NOTIFIED_RETAINED_POSTS = set()
 
-try:
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
-    client_gs = gspread.authorize(creds)
-    sheet_posting = client_gs.open("Posting Tasks").sheet1
-    print("✅ Sheet Automation Bot connected to Google Sheets successfully!")
-except Exception as e:
-    print(f"❌ Google Sheets Connection Error: {e}")
+@tasks.loop(minutes=2)
+async def check_sheet_retentions():
+    for client_id_num, cfg in CLIENT_CONFIG.items():
+        try:
+            sheet = client_gs.open(cfg["posting_sheet"]).sheet1
+            rows = sheet.get_all_values()
+            discord_id = cfg["discord_id"]
 
-WORKER_TASKS_CHANNEL_ID = 1564649806482120805
+            for idx, row in enumerate(rows[1:], start=2):
+                if len(row) < 7:
+                    continue
 
-@tasks.loop(hours=1)
-async def automated_sheet_keeper():
+                worker_profile = row[0] if len(row) > 0 else "N/A"
+                post_no = row[1] if len(row) > 1 else "Unknown Post"
+                p1_link = row[4] if len(row) > 4 else "No link provided"
+                p1_duration = row[5] if len(row) > 5 else "specified"
+                p1_retained = row[6].strip() if len(row) > 6 else ""
+                pay_rate = row[7] if len(row) > 7 else "$2"
+                upi_details = row[15] if len(row) > 15 else "N/A"
+
+                if p1_retained.lower() in ["yes", "1"] and f"C{client_id_num}_{post_no}_P1" not in NOTIFIED_RETAINED_POSTS:
+                    NOTIFIED_RETAINED_POSTS.add(f"C{client_id_num}_{post_no}_P1")
+                    await send_client_dm(discord_id, client_id_num, post_no, worker_profile, upi_details, pay_rate, p1_duration, p1_link)
+
+        except Exception as e:
+            print(f"Error checking retentions: {e}")
+
+async def send_client_dm(discord_id, client_id_num, post_no, worker_name, upi, pay, duration, link):
     try:
-        rows = sheet_posting.get_all_values()
-        worker_channel = bot.get_channel(WORKER_TASKS_CHANNEL_ID)
-
-        for idx, row in enumerate(rows[1:], start=2):
-            if len(row) >= 5:
-                t1_type = row[3]
-                t1_link = row[4]
-
-                if t1_link and t1_link.startswith("http") and t1_type != "Invalid":
-                    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
-                    async with aiohttp.ClientSession(headers=headers) as session:
-                        try:
-                            async with session.get(t1_link, timeout=10) as resp:
-                                text = await resp.text()
-                                if resp.status == 404 or "removed by reddit's filters" in text.lower() or "sorry, this post was removed" in text.lower() or "removed by the moderators" in text.lower():
-                                    sheet_posting.update_cell(idx, 4, "Invalid")
-                                    sheet_posting.update_cell(idx, 1, "Unclaimed")
-                                    sheet_posting.update_cell(idx, 5, "")
-                                    sheet_posting.update_cell(idx, 16, "")
-                                    
-                                    if worker_channel:
-                                        embed = discord.Embed(title=f"🔄 Task Reset & Re-Posted: {row[1]}", description="Post was removed. Marked Invalid and reset to Unclaimed.", color=discord.Color.orange())
-                                        await worker_channel.send(embed=embed)
-                                else:
-                                    sheet_posting.update_cell(idx, 7, "Yes")
-                        except Exception:
-                            pass
+        if discord_id and discord_id != 0:
+            user = await bot.fetch_user(discord_id)
+            if user:
+                embed = discord.Embed(
+                    title=f"🎉 Task Verified Live & Retained! ({post_no})",
+                    description=f"**Client ID:** `{client_id_num}`\n**Worker Profile:** `{worker_name}`\n**Pay Rate:** `{pay}`\n**Worker UPI:** `{upi}`\n\n🔗 **Post Link:** {link}\n⏳ **Retention Duration:** {duration}",
+                    color=discord.Color.green()
+                )
+                await user.send(embed=embed)
     except Exception as e:
-        print(f"Error in Bot 2: {e}")
+        print(f"Failed to DM client: {e}")
 
 @bot.event
 async def on_ready():
-    print(f"🤖 Sheet Automation Bot online as {bot.user}")
-    if not automated_sheet_keeper.is_running():
-        automated_sheet_keeper.start()
+    check_sheet_retentions.start()
+    print(f"🤖 Sheet Automation Bot online as {bot.user}!")
 
 if __name__ == "__main__":
-    keep_alive()
-    bot.run(os.getenv("DISCORD_TOKEN"))
+    bot.run(os.environ.get("DISCORD_TOKEN_BOT2"))
