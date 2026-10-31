@@ -6,23 +6,20 @@ from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import random
 import os
-import json
 
-# 1. Dynamically generate credentials.json from Render's Environment Variable
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
 try:
-    raw_json_env = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    # Read directly from your existing Render environment variable name: G_PRIVATE_KEY
+    raw_json_env = os.getenv("G_PRIVATE_KEY")
     if raw_json_env:
-        # If stored as raw text, write it directly
         with open("credentials.json", "w") as f:
             f.write(raw_json_env)
     else:
-        # Fallback dictionary if environment variable isn't set yet
-        print("⚠️ Warning: GOOGLE_CREDENTIALS_JSON not found in environment!")
+        print("⚠️ Warning: G_PRIVATE_KEY not found in environment!")
 
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scopes=SCOPES)
     client_gs = gspread.authorize(creds)
