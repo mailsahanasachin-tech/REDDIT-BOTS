@@ -2,15 +2,18 @@ from keep_alive import keep_alive
 import discord
 from discord.ext import commands
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 import datetime
 import random
 import os
-import json
 
-# Automatically generate clean credentials.json on startup from environment variables
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
+
 try:
-    cred_data = {
+    creds_info = {
         "type": "service_account",
         "project_id": os.getenv("G_PROJECT_ID"),
         "private_key_id": "32ee0d35ab99116946328cc0816325d8ce314deb",
@@ -23,29 +26,18 @@ try:
         "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/discord-bot-sheets%40savvy-fountain-450108-t6.iam.gserviceaccount.com",
         "universe_domain": "googleapis.com"
     }
-    with open("credentials.json", "w") as f:
-        json.dump(cred_data, f)
-    print("✅ Successfully generated credentials.json locally!")
+    
+    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    client_gs = gspread.authorize(creds)
+    sheet_posting = client_gs.open("Posting Tasks").sheet1
+    sheet_payment = client_gs.open("Payment Tracking").sheet1
+    print("✅ Messenger Bot connected to Google Sheets successfully via Google-Auth!")
 except Exception as e:
-    print(f"❌ Failed to generate credentials file: {e}")
+    print(f"❌ Google Sheets Connection Error: {e}")
 
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-SCOPE = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-
-try:
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
-    client_gs = gspread.authorize(creds)
-    sheet_posting = client_gs.open("Posting Tasks").sheet1
-    sheet_payment = client_gs.open("Payment Tracking").sheet1
-    print("✅ Messenger Bot connected to Google Sheets successfully!")
-except Exception as e:
-    print(f"❌ Google Sheets Connection Error: {e}")
 
 WORKER_TASKS_CHANNEL_ID = 1564649806482120805     # #reddit-tasks
 CLIENT_ANSWERS_CHANNEL_ID = 1565406309950685287   # #client-answers
