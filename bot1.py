@@ -6,6 +6,7 @@ from google.oauth2.service_account import Credentials
 import datetime
 import random
 import os
+import traceback
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -64,7 +65,8 @@ try:
     sheet_payment = client_gs.open("Payment Tracking").sheet1
     print("✅ Messenger Bot connected to Google Sheets successfully!")
 except Exception as e:
-    print(f"❌ Google Sheets Connection Error: {e}")
+    traceback.print_exc()
+    print(f"❌ Google Sheets Connection Error Details: {str(e)}")
 
 intents = discord.Intents.default()
 intents.message_content = True
