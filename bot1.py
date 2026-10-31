@@ -7,7 +7,7 @@ import datetime
 import random
 import os
 import json
-import base64
+import traceback
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
@@ -36,20 +36,15 @@ try:
         
         if "private_key" in cred_dict:
             pk = cred_dict["private_key"].replace("\\n", "\n")
-            
             if "-----BEGIN PRIVATE KEY-----" in pk:
                 lines = [line.strip() for line in pk.split("\n") if line.strip()]
                 b64_content = "".join([l for l in lines if not l.startswith("-----")])
-                
-                # Automatically fix base64 padding length so it never throws length errors
                 b64_content += "=" * (-len(b64_content) % 4)
                 
-                # Rebuild standard clean PEM block with 64-character lines
                 formatted_key = "-----BEGIN PRIVATE KEY-----\n"
                 for i in range(0, len(b64_content), 64):
                     formatted_key += b64_content[i:i+64] + "\n"
                 formatted_key += "-----END PRIVATE KEY-----\n"
-                
                 cred_dict["private_key"] = formatted_key
 
         with open("credentials.json", "w") as f:
@@ -63,7 +58,8 @@ try:
     sheet_payment = client_gs.open("Payment Tracking").sheet1
     print("✅ Messenger Bot connected to Google Sheets successfully!")
 except Exception as e:
-    print(f"❌ Google Sheets Connection Error: {e}")
+    print(f"❌ Google Sheets Connection Error:")
+    traceback.print_exc()
 
 intents = discord.Intents.default()
 intents.message_content = True
