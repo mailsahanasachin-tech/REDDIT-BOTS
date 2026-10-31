@@ -2,13 +2,13 @@ from keep_alive import keep_alive
 import discord
 from discord.ext import commands
 import gspread
-from google.oauth2.service_account import Credentials
+from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import random
 import os
 import json
 
-# 1. Automatically write credentials.json on startup to prevent parsing errors
+# 1. Write the clean credentials JSON file dynamically on startup
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -63,7 +63,8 @@ with open("credentials.json", "w") as f:
     json.dump(cred_data, f)
 
 try:
-    creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+    # Use oauth2client which natively parses service account keys reliably on Linux servers
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scopes=SCOPES)
     client_gs = gspread.authorize(creds)
     sheet_posting = client_gs.open("Posting Tasks").sheet1
     sheet_payment = client_gs.open("Payment Tracking").sheet1
@@ -369,7 +370,7 @@ async def setup_client_answers(ctx):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def setup_payment_proofs(ctx):
-    await ctx.send(embed=discord.Embed(title="Payment VerificationPanel", color=discord.Color.gold()), view=PaymentProofView())
+    await ctx.send(embed=discord.Embed(title="Payment Verification Panel", color=discord.Color.gold()), view=PaymentProofView())
 
 @bot.event
 async def on_ready():
